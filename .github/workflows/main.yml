@@ -20,32 +20,24 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Prepare Project & Build APK
+      - name: Extract and Compile APK
         run: |
-          echo "=== 1. Checking repository files ==="
-          # জিপ ফাইল থাকলে আনজিপ করা
-          for f in $(find . -maxdepth 3 -name "*.zip" -o -name "*mypay*"); do
-            if [ -f "$f" ]; then
-              echo "Extracting: $f"
-              unzip -q -o "$f" || true
-            fi
-          done
+          echo "=== 1. Extracting Project Zip ==="
+          find . -name "*.zip" -exec unzip -q -o {} \;
 
-          # প্রজেক্ট ডিরেক্টরি খুঁজে বের করা
-          BUILD_FILE=$(find . -name "settings.gradle*" -o -name "build.gradle*" | head -n 1)
-          PROJECT_DIR=$(dirname "$BUILD_FILE")
-          echo "Project directory: $PROJECT_DIR"
-          cd "$PROJECT_DIR"
+          echo "=== 2. Locating Project ==="
+          BUILD_DIR=$(find . -name "settings.gradle.kts" -exec dirname {} \; | head -n 1)
+          echo "Found project at: $BUILD_DIR"
+          cd "$BUILD_DIR"
 
-          # অফিসিয়াল Gradle Wrapper ডাউনলোড করা (মিসিং ফাইলের সমাধান)
+          echo "=== 3. Setup Gradle Wrapper ==="
           mkdir -p gradle/wrapper
-          echo "Downloading official Gradle 8.6 Wrapper..."
           curl -sSLo gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.6.0/gradle/wrapper/gradle-wrapper.jar
           curl -sSLo gradlew https://raw.githubusercontent.com/gradle/gradle/v8.6.0/gradlew
           chmod +x gradlew
 
-          echo "=== 2. Compiling Debug APK ==="
-          ./gradlew assembleDebug --no-daemon
+          echo "=== 4. Building Debug APK ==="
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
